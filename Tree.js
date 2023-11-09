@@ -23,10 +23,10 @@ class Tree {
         let midIndex = Math.floor(dataArray.length / 2);
 
         let midElement = dataArray[midIndex];
-        let leftNode = this.buildTree(dataArray.slice(0, midIndex));
-        let rightNode = this.buildTree(dataArray.slice(midIndex + 1));
+        let nodeLeft = this.buildTree(dataArray.slice(0, midIndex));
+        let nodeRight = this.buildTree(dataArray.slice(midIndex + 1));
 
-        let node = new Node(midElement, leftNode, rightNode);
+        let node = new Node(midElement, nodeLeft, nodeRight);
 
         return node;
     }
@@ -50,31 +50,146 @@ class Tree {
         this.#rootNode = this.#recDelete(this.#rootNode, value);
     }
 
-    #recDelete(node, value) {
-        if (node.value === value && !node.nodeLeft && !node.nodeRight) {
+    #recDelete(nodeToDelete, value) {
+        if (value < nodeToDelete.value)
+            nodeToDelete.nodeLeft = this.#recDelete(nodeToDelete.nodeLeft, value);
+        else if (value > nodeToDelete.value)
+            nodeToDelete.nodeRight = this.#recDelete(nodeToDelete.nodeRight, value);
+
+        if (nodeToDelete.value === value && !nodeToDelete.nodeLeft && !nodeToDelete.nodeRight) {
             return null;
         }
-        else if (node.value === value && node.nodeLeft && !node.nodeRight) {
-            node = node.nodeLeft;
-            return node;
+        else if (nodeToDelete.value === value && nodeToDelete.nodeLeft && !nodeToDelete.nodeRight) {
+            nodeToDelete = nodeToDelete.nodeLeft;
+            return nodeToDelete;
         }
-        else if (node.value === value && node.nodeRight && !node.nodeLeft) {
-            node = node.nodeRight;
-            return node;
-        } else if (node.value === value && node.nodeRight && node.nodeLeft) {
-            
+        else if (nodeToDelete.value === value && nodeToDelete.nodeRight && !nodeToDelete.nodeLeft) {
+            nodeToDelete = nodeToDelete.nodeRight;
+            return nodeToDelete;
+        } else if (nodeToDelete.value === value && nodeToDelete.nodeRight && nodeToDelete.nodeLeft) {
+            let parentNode = nodeToDelete;
+
+            let childNode = nodeToDelete.nodeRight;
+
+            while (childNode.nodeLeft != null) {
+                parentNode = childNode;
+                childNode = childNode.nodeLeft;
+            }
+
+            if (parentNode != nodeToDelete) {
+                parentNode.nodeLeft = childNode.nodeRight;
+            } else {
+                if (!childNode.nodeRight)
+                    parentNode.nodeRight = null;
+                else
+                    nodeToDelete.nodeRight = childNode.nodeRight;
+            }
+
+            nodeToDelete.value = childNode.value;
+
+            return nodeToDelete;
         }
 
-        if (value < node.value)
-            node.nodeLeft = this.#recDelete(node.nodeLeft, value);
-        else if (value > node.value)
-            node.nodeRight = this.#recDelete(node.nodeRight, value);
-
-        return node;
+        return nodeToDelete;
     }
 
-    #recNextSmallest(nodeToDelete, parentNode) {
-        
+    find(value, node = this.#rootNode) {
+        if (!node) return null;
+
+        if (value < node.value)
+            return this.find(value, node.nodeLeft);
+        else if (value > node.value)
+            return this.find(value, node.nodeRight);
+        else
+            return node;
+    }
+
+    levelOrder() {
+        if (!this.#rootNode) return null;
+
+        let queue = [this.#rootNode];
+
+        while (queue.length > 0) {
+            let curNode = queue[0];
+
+            console.log(`Value: ${curNode.value}, NodeLeft: ${curNode.nodeLeft}, NodeRight: ${curNode.nodeRight}`);
+
+            if (curNode.nodeLeft) queue.push(curNode.nodeLeft);
+            if (curNode.nodeRight) queue.push(curNode.nodeRight);
+
+            queue.shift();
+        }
+    }
+
+    preOrder(node = this.#rootNode) {
+        if (!node) return null;
+
+        console.log(`Node value: ${node.value}`);
+
+        this.preOrder(node.nodeLeft);
+        this.preOrder(node.nodeRight);
+    }
+
+    inOrder(node = this.#rootNode) {
+        if (!node) return null;
+
+        this.inOrder(node.nodeLeft);
+        console.log(`Node value: ${node.value}`);
+        this.inOrder(node.nodeRight);
+    }
+
+    postOrder(node = this.#rootNode) {
+        if (!node) return null;
+
+        this.postOrder(node.nodeLeft);
+        this.postOrder(node.nodeRight);
+        console.log(`Node value: ${node.value}`);
+    }
+
+    depth(valueNode, curNode = this.#rootNode, depth = 0) {
+        if (!valueNode || !curNode) return null;
+
+        if (valueNode.value < curNode.value) {
+            return this.depth(valueNode, curNode.nodeLeft, ++depth);
+        }
+        else if (valueNode.value > curNode.value) {
+            return this.depth(valueNode, curNode.nodeRight, ++depth);
+        }
+
+        return depth;
+    }
+
+    height(node = this.#rootNode) {
+        if (!node) return -1;
+
+        let heightLeft = this.height(node.nodeLeft);
+        let heightRight = this.height(node.nodeRight);
+
+        return Math.max(heightLeft, heightRight) + 1;
+    }
+
+    isBalanced(node = this.#rootNode) {
+        return Math.abs(this.height(node.nodeLeft) - this.height(node.nodeRight)) <= 1 ? true : false;
+    }
+
+    rebalance(node = this.#rootNode) {
+        if (this.isBalanced()) return false;
+
+        let dataArray = [];
+        let queue = [node];
+
+        while(queue != 0) {
+            if(queue[0].nodeLeft) queue.push(queue[0].nodeLeft);
+            if(queue[0].nodeRight) queue.push(queue[0].nodeRight);
+
+            dataArray.push(queue[0].value);
+
+            queue.shift();
+        }
+
+        this.#rootNode = this.buildTree(this.removeDuplicatesSort(dataArray));
+
+        return true;
     }
 
     prettyPrint(node = this.#rootNode, prefix = "", isLeft = true) {
